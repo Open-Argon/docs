@@ -20,7 +20,6 @@ reused variables, and infomation for use in understanding the pseudo REGEX:
 -   spaces used in the pseudo REGEX should be taken as 1 or many spaces.
 -   there can be 0 or more spaces around any of the pseudo REGEX
 
----
 
 ## set variable
 
@@ -29,8 +28,16 @@ reused variables, and infomation for use in understanding the pseudo REGEX:
 let variables will set variables. at the end of a opperation (e.g. if, while, or function) drop the
 variable stack.
 
+
 having no verb at the start suggests the program would like to edit a variables from a different stack.
 if there is no variable found in the other stacks, then it sets one in the current stack as a let.
+
+example:
+```javascript
+let x = 10
+y = 20
+let z = x + y
+```
 
 setting variables returns the value, which can be used.
 
@@ -41,7 +48,6 @@ if ((x = 10) > 5) do
     term.log(x, 'is bigger than 5')
 ```
 
----
 
 ## functions
 
@@ -65,8 +71,6 @@ f(10) = 121
 ```
 
 if the function does not return, then the value returned is `null`
-
----
 
 ## wrap
 
