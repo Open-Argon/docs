@@ -114,6 +114,6 @@ term.log("your password is", password)
 If the wrap does not take a return value, then the wrap passes the return value back to a parent wrap.
 
 ## Comments
-`//{COMMENT}`
+`#{COMMENT}`
 
 Comments allow the programmer to write a message into their code, without the message being processed by the computer.
