@@ -1,2 +1,2 @@
 # docs
-read the [spec](spec.md)
+read the [spec](spec)
