@@ -9,7 +9,7 @@ To define a variable using the `let` keyword, you need to specify the variable n
 let x = 10
 ```
 
-In this example, we define a variable named `x` and initialise it with a value of `10`. The `let` keyword tells the Argon interpreter to define the variable on the current stack.
+In this example, we define a variable named `x` and initialise it with a value of `10`. The `let` keyword tells the Argon interpreter to define the variable on the current stack. If `x` already exists in the current stack, then it will throw a `Name Error` of `Name Error: variable "x" already exists`.
 
 Method 2: Assigning a value to a variable name
 
@@ -48,6 +48,8 @@ term.log(x) # Output: 20
 In this example, we define a variable `x` with a value of `10` using `let`. We then create a new block using the `do` keyword, which creates a new scope. Within this scope, we re-assign the value of `x` to `20` without using `let`. When we log the value of `x` using `term.log` within the scope, we get the value `20`. When we log the value of x outside of the scope, we also get the value `20`, because the re-assignment of `x` in the nested scope affects the value of `x` in the outer scope. This demonstrates how re-assigning a variable without using let will replace the value of the variable in the current scope, and will also affect the value of the variable in any enclosing scopes.
 
 # Function Assignment
+
+`let` works exactly the same way as it does in variable assignment.
 
 ```javascript
 let square(x) = do
