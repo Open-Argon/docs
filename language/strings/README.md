@@ -26,7 +26,7 @@ $(
 )
 ```
 
-(from [`templates.ar`](../../../chloride/tests/templates.ar)) — this demonstrates that the
+(from [`templates.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/templates.ar)) — this demonstrates that the
 interpolated expression can be an entire `do` block with side effects, not just a simple
 variable.
 
@@ -43,13 +43,13 @@ Template strings also support unicode escapes like `\u1324`:
 throw MyError(`hel\u1324lo`)
 ```
 
-(from [`error_system.ar`](../../../chloride/tests/error_system.ar))
+(from [`error_system.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/error_system.ar))
 
 ## Escape sequences
 
 Standard escapes are supported inside strings, including `\"`, `\\`, `\/`, `\b`, `\f`,
 `\n`, `\r`, `\t`, and `\uXXXX` (see the JSON standard library's string parser at
-[`stdlib/json/init.ar`](../../../chloride/stdlib/json/init.ar) for the full escape table
+[`stdlib/json/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/stdlib/json/init.ar) for the full escape table
 used when parsing JSON strings — the same escapes are valid in Argon string literals).
 
 ## Indexing and slicing
@@ -91,7 +91,7 @@ let __starts_with__(s, prefix) = do
     return s[0:prefix.length] == prefix
 ```
 
-(from [`stdlib/path/init.ar`](../../../chloride/stdlib/path/init.ar), showing `.length` and
+(from [`stdlib/path/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/stdlib/path/init.ar), showing `.length` and
 slicing used together)
 
 ## Comparing strings
