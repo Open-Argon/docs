@@ -33,7 +33,7 @@ term.log(exponent(2, 3))    # 8
 
 Numeric literals also support scientific notation and hex, e.g. `1e5`, `1e7`, `0xD800`
 (see [`array_set.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/array_set.ar) for `1e5` and
-[`json/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/stdlib/json/init.ar) for hex literals).
+[`json/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea43json/init.ar) for hex literals).
 
 ## Comparison
 

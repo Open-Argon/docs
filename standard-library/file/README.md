@@ -5,7 +5,7 @@ import "file" expose open
 ```
 
 Filesystem I/O (native code backed), see
-[`stdlib/file/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/stdlib/file/init.ar).
+[`stdlib/file/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea43file/init.ar).
 
 ## `open(path, mode="r")`
 
@@ -45,7 +45,7 @@ file.
 ## Exceptions
 
 `file` defines its own exception hierarchy (all subclasses of the base `FileError`), from
-[`stdlib/file/exceptions.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/stdlib/file/exceptions.ar):
+[`stdlib/file/exceptions.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea43file/exceptions.ar):
 
 - `FileError` — general file error base class.
   - `FileReadError` — raised when reading fails (e.g. reading a file not opened in read
@@ -67,7 +67,7 @@ catch (FileNotFoundError as e) do
 
 Attempting to open a file with an invalid mode string raises a `FileError` before any
 filesystem access happens — see `_validate_mode` in
-[`stdlib/file/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/stdlib/file/init.ar), which also demonstrates
+[`stdlib/file/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea43file/init.ar), which also demonstrates
 Argon's `not in` operator:
 
 ```

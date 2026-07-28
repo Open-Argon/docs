@@ -74,7 +74,7 @@ x[0] = 10
 ### `.pop`
 
 ```
-import "../stdlib/random" expose random
+import "random" expose random
 
 let x = []
 let i = 0
@@ -108,7 +108,7 @@ produces a range object, and `array(...)` converts it to a concrete array first.
 ### Random shuffle via swapping
 
 ```
-import "../stdlib/random" expose random
+import "random" expose random
 
 let x = []
 let i = 0

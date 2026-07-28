@@ -1,11 +1,11 @@
 # `path`
 
 ```
-import "../stdlib/path" as path
+import "path" as path
 ```
 
 A pure-Argon path manipulation library (see
-[`stdlib/path/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/stdlib/path/init.ar)), similar in spirit to
+[`stdlib/path/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea43path/init.ar)), similar in spirit to
 Python's `pathlib`/`os.path`. Paths are always normalised internally to use `/` as the
 separator, even on Windows.
 
@@ -57,7 +57,7 @@ let __rand__ = load_native_code(
 )
 ```
 
-(from [`stdlib/random/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/stdlib/random/init.ar) — see
+(from [`stdlib/random/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea43random/init.ar) — see
 [`program`](../../language/modules/README.md#the-program-global) and
 [`platform`](../../language/modules/README.md#the-platform-global) for the globals used
 here)
@@ -70,7 +70,7 @@ let home = do
     return env["HOME"]
 ```
 
-(from [`stdlib/path/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/stdlib/path/init.ar)) — this shows the
+(from [`stdlib/path/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea43path/init.ar)) — this shows the
 [`env`](../../language/modules/README.md#the-env-global) global being used to find the
 user's home directory in a cross-platform way.
 

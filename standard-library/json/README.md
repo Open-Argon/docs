@@ -1,11 +1,11 @@
 # `json`
 
 ```
-import "../stdlib/json" as json
+import "json" as json
 ```
 
 A pure-Argon JSON encoder/decoder (see
-[`stdlib/json/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/stdlib/json/init.ar)).
+[`stdlib/json/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea43json/init.ar)).
 
 ## `json.stringify(value, pretty=false)`
 

@@ -31,14 +31,14 @@ import "<path>" [as <name>] [expose <name1> <name2> ...] | [expose *]
   let __rand__ = load_native_code(path.resolve(program.file.directory, "native", "bin", "random" + platform.lib_ext))
   ```
 
-  (from [`stdlib/random/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/stdlib/random/init.ar)) — after this,
+  (from [`stdlib/random/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea43random/init.ar)) — after this,
   `maths.int(...)` and `path.resolve(...)` refer to functions defined in those modules.
 
 - **`expose name1 name2 ...`** pulls specific top-level names out of the imported file
   directly into your current scope, so you can use them unqualified:
 
   ```
-  import "../stdlib/random" expose random
+  import "random" expose random
   ```
 
   (from [`array_pop.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/array_pop.ar)) — after this, `random` (an
@@ -50,7 +50,7 @@ import "<path>" [as <name>] [expose <name1> <name2> ...] | [expose *]
 
 Import paths are relative to the importing file. `.ar` files can import both other user
 files (e.g. `"import_test.ar"`) and standard library modules by relative path (e.g.
-`"../stdlib/random"`, which imports a directory containing an `init.ar`).
+`"random"`, which imports a directory containing an `init.ar`).
 
 ## Circular imports
 
@@ -79,7 +79,7 @@ let __rand__ = load_native_code(
 )
 ```
 
-(from [`stdlib/random/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/stdlib/random/init.ar), using
+(from [`stdlib/random/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea43random/init.ar), using
 `program.file.directory` to locate a native shared library relative to the module's own
 location)
 
@@ -100,7 +100,7 @@ location)
 let home = env["HOME"]
 ```
 
-(pattern seen in [`stdlib/path/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/stdlib/path/init.ar)'s
+(pattern seen in [`stdlib/path/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea43path/init.ar)'s
 `expand_user` function, which reads `env["HOME"]` or `env["USERPROFILE"]`)
 
 ## Loading native code

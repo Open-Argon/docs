@@ -44,7 +44,7 @@ let is_relative_to(p, base) = do
         return false
 ```
 
-(from [`stdlib/path/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/stdlib/path/init.ar))
+(from [`stdlib/path/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea43path/init.ar))
 
 ## Defining custom exceptions
 
@@ -94,8 +94,8 @@ The global scope defines a hierarchy of built-in exceptions you can catch or sub
 
 Module-specific standard library packages (like `file` and `regex`) also define their own
 exception subclasses in an `exceptions.ar` file — see, for example,
-[`stdlib/file/exceptions.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/stdlib/file/exceptions.ar) and
-[`stdlib/regex/exceptions.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/stdlib/regex/exceptions.ar).
+[`stdlib/file/exceptions.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea43file/exceptions.ar) and
+[`stdlib/regex/exceptions.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea43regex/exceptions.ar).
 
 ## Next
 

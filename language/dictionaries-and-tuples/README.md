@@ -46,7 +46,7 @@ for (keyval in value) do
     ...
 ```
 
-(adapted from [`stdlib/json/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/stdlib/json/init.ar)'s `stringify`
+(adapted from [`stdlib/json/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea43json/init.ar)'s `stringify`
 function, which walks a dictionary's entries this way to build JSON output)
 
 ### Converting to/from a dictionary
@@ -74,7 +74,7 @@ let split(p) = do
     return tuple(head, tail)
 ```
 
-(from [`stdlib/path/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/stdlib/path/init.ar)'s `split` function,
+(from [`stdlib/path/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea43path/init.ar)'s `split` function,
 which returns a `tuple(head, tail)`)
 
 ### Indexing a tuple

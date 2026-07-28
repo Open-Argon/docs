@@ -11,7 +11,7 @@ A `while` loop with a truthy constant condition (e.g. a non-zero length) can be 
 drain a collection:
 
 ```
-import "../stdlib/random" expose random
+import "random" expose random
 
 let x = []
 let i = 0

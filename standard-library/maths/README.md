@@ -1,11 +1,11 @@
 # `maths`
 
 ```
-import "../stdlib/maths" as maths
+import "maths" as maths
 ```
 
 The full implementation, from
-[`stdlib/maths/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/stdlib/maths/init.ar):
+[`stdlib/maths/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea43maths/init.ar):
 
 ```
 let abs(num) = do

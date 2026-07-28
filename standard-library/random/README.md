@@ -1,7 +1,7 @@
 # `random`
 
 ```
-import "../stdlib/random" expose random
+import "random" expose random
 ```
 
 The module exposes a single ready-made `random` instance (of an internal `Random` class),
@@ -23,7 +23,7 @@ class Random do
 let random = Random(__rand__.random_os_seed())
 ```
 
-(from [`stdlib/random/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/stdlib/random/init.ar)) — the underlying
+(from [`stdlib/random/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea43random/init.ar)) — the underlying
 random number generation is implemented in native C (`native/random.c`), loaded via
 `load_native_code`.
 
@@ -41,7 +41,7 @@ random number generation is implemented in native C (`native/random.c`), loaded 
 Picking a random index and popping it (a shuffle pattern):
 
 ```
-import "../stdlib/random" expose random
+import "random" expose random
 
 let x = []
 let i = 0
