@@ -1,35 +1,46 @@
 # `term`
 
-`term` is a global (always available, no `import` needed) providing basic terminal I/O.
+`term` is a global (always available, no `import` needed) for basic terminal I/O.
 
-## `term.log(...)`
+## `term.log(*values, sep=" ", end="\n")`
 
-Prints any number of arguments, space-separated, followed by a newline — the main way to
-print output:
+Prints its arguments to standard output, converted to strings and separated by `sep`,
+followed by `end`. Output is flushed immediately.
 
-```
+```argon
 term.log("Hello, world!")
-term.log(1, 2, 3)
-term.log(x, y, z)
+term.log(1, 2, 3)                         # 1 2 3
+term.log(1, 2, 3, sep = ", ")             # 1, 2, 3
+term.log("no newline", end = "")
+term.log()
 ```
 
-Used throughout the test suite, e.g.
-[`array.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/array.ar):
+Values are converted with their `__string__` method, so strings print without quotes.
+Inside arrays and dictionaries, strings are shown quoted:
 
+```argon
+term.log("text", ["text"], {key: "text"})   # text ["text"] {"key": "text"}
 ```
-let x = [0,1,2,3,4,5,6,7,8,9]
-term.log(x[3])
+
+## `term.error(exception)`
+
+Prints an exception to standard error in the same format used for uncaught errors,
+without stopping the program. It only accepts exception objects:
+
+```argon
+try throw ValueError("something went wrong")
+catch (Exception as e) term.error(e)
 ```
 
-## `term.error(...)`
+To print arbitrary text to standard error, write to
+[`file.stderr`](../file/README.md#standard-streams).
 
-Same as `term.log`, but writes to the error stream instead of standard output.
+## `term.input(prompt?)`
 
-## `term.input(prompt)`
+Shows `prompt` (if given), reads a line from the user and returns it as a string, without
+the trailing newline:
 
-Reads a line of input from the user, optionally showing `prompt` first:
-
-```
+```argon
 let name = term.input("What's your name? ")
 term.log(`Hello, $(name)!`)
 ```

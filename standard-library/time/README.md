@@ -1,50 +1,24 @@
 # `time`
 
-```
+```argon
 import "time" as time
 ```
 
-Provides functions for working with delays and timing.
-
 ## `time.snooze(seconds)`
 
-Pauses execution for the specified number of seconds.
+Pauses the current thread for `seconds`, which may be fractional:
 
-`seconds` may be an integer or a rational number.
+```argon
+import "time" as time
 
-```
-time.snooze(1)
-```
-
-Sleeps for one second before continuing execution.
-
-Fractional seconds can be used for shorter delays:
-
-```
-time.snooze(0.5)
-```
-
-Sleeps for half a second.
-
-Example:
-
-```
 term.log("Starting")
-
-time.snooze(2)
-
+time.snooze(0.5)   # half a second
 term.log("Finished")
 ```
 
-Output:
-
-```
-Starting
-# waits 2 seconds
-Finished
-```
+For the current date and time, or for measuring how long something takes, see the
+[`date`](../date/README.md) module.
 
 ## Next
 
-- [`date`](../date/README.md)
-- [`json`](../json/README.md)
+- [`regex`](../regex/README.md)

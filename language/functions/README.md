@@ -2,154 +2,199 @@
 
 ## Declaring a function
 
-Functions are declared with `let`, just like variables — a function is a value:
+Functions are declared with `let`, just like variables, because a function is a value:
 
-```
+```argon
 let add(a, b) = do
     return a + b
 
 term.log(add(2, 3))   # 5
 ```
 
-For a single-expression body, you can skip `do` and `return` entirely:
+For a single-expression body, skip `do` and `return`. The expression is the return value:
 
-```
+```argon
 let square(x) = x * x
+term.log(square(4))   # 16
 ```
 
-This is the same pattern used for one-line class methods (see
-[Classes and objects](../classes/README.md)).
+A function that finishes without `return` (or with a bare `return`) returns `null`.
 
-## Anonymous (lambda) functions
+## Anonymous functions
 
-Functions don't need a name. An anonymous function is written the same way, just without
-an identifier before the parameter list:
+Leave out the name to create an anonymous function (a lambda):
 
-```
-term.log(()=10)          # a zero-argument anonymous function returning 10
-term.log((x)=10)
-term.log((x,y)=10)
-term.log((x,y,z)=10)
+```argon
+let double = (x) = x * 2
+let greet = () = "hello"
+let add = (a, b) = do
+    return a + b
 
-# named versions, for comparison:
-term.log(a()=10)
-term.log(b(x)=10)
+term.log(double(4), greet(), add(1, 2))   # 8 hello 3
 ```
 
-(from [`anonymous_function.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/anonymous_function.ar))
+Anonymous functions are commonly passed straight to other functions:
 
-Anonymous functions are commonly passed directly as arguments, e.g. to `array.map`:
-
-```
-term.log(
-  array(range(-1000000, 1000000))
-    .map((val) = val * val)
-    .filter((val) = val < 10000)
-    .sort((a, b) = a < b ? -1 : a > b ? 1 : 0)
-)
+```argon
+term.log([3, 1, 2].sort((a, b) = a - b))   # [1, 2, 3]
+term.log(array(1 to 10)
+    .map((n) = n * n)
+    .filter((n) = n % 2 == 0))             # [4, 16, 36, 64, 100]
 ```
 
-(from [`map_filter_sort.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/map_filter_sort.ar) — this also shows
-method chaining on arrays; see [Arrays](../arrays/README.md).)
+When an anonymous function with a `do` body is an argument, the closing `)` goes on a new
+line at the indentation of the call:
 
-## Default arguments
+```argon
+let run(callback) = callback()
 
-```
-let round(num, precision=1) = do
-    ...
-```
-
-(from [`stdlib/maths/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea43maths/init.ar))
-
-## Variadic arguments: `*args` and `**kwargs`
-
-A function can collect any extra positional arguments into an array with `*args`, and any
-extra keyword arguments into a dictionary with `**kwargs`:
-
-```
-let f(*args, **kwargs) = do
-    term.log(args, kwargs)
-
-f("Hello world", *[1, 2, 3], **{x: 1, y: 5, z: 7})
+term.log(run(() = do
+    let x = 20
+    return x + 1
+))   # 21
 ```
 
-(from [`argument_unpacking.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/argument_unpacking.ar)) — note that
-`*` and `**` are also used at the **call site** to unpack an existing array/dictionary into
-positional/keyword arguments, exactly like the definition-site collectors.
+## Parameters
 
-### Mixing required, default, `*args`, and `**kwargs`
+### Default values
 
-```
-let f(x, a=null, *args, **kwargs) = do
-    return `x=$(x), a=$(a), args=$(args), kwargs=$(kwargs)`
+```argon
+let greet(name, greeting = "Hello") = `$(greeting), $(name)!`
 
-term.log(f(1))
-term.log(f(1, 2))
-term.log(f(1, 2, 3))
-term.log(f(a=2, *["this should go to x"]))
-term.log(f(1, a=2, **["this should go to kwargs"]))
-term.log(f(1, a=2, **{wow: "this should go to kwargs"}))
-term.log(f(a=2, **{x: "this should go to x"}))
+term.log(greet("Ada"))                   # Hello, Ada!
+term.log(greet("Ada", "Hi"))             # Hi, Ada!
+term.log(greet("Ada", greeting = "Yo"))  # Yo, Ada!
 ```
 
-(from
-[`test_mixed_args_defaults_and_unpacking.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/test_mixed_args_defaults_and_unpacking.ar))
+Parameters without defaults must come before parameters with defaults.
 
-This shows that keyword arguments can fill in named parameters like `x` even when passed
-via `**{x: ...}`, and that unpacking a plain array with `**` still works, filling in
-`kwargs` positionally in the array's order.
+Default values are evaluated **once, when the function is defined**, and the same value is
+reused for every call. Avoid mutable defaults like `[]` or `{}`, because changes to them
+persist between calls. Default to `null` and create the value inside the function instead:
+
+```argon
+let add_item(item, items = null) = do
+    if (items == null) items = []
+    items.append(item)
+    return items
+
+add_item(1)
+term.log(add_item(2))   # [2]
+```
+
+### Optional parameters: `name?`
+
+`name?` is shorthand for a parameter that defaults to `null`:
+
+```argon
+let describe(value, label?) = do
+    if (label) return `$(label): $(value)`
+    return string(value)
+
+term.log(describe(5), describe(5, "count"))   # 5 count: 5
+```
+
+### Keyword arguments
+
+Any named parameter can be passed by name:
+
+```argon
+let box(width, height = 1) = width * height
+term.log(box(height = 3, width = 2))   # 6
+```
+
+### Variadic parameters: `*args` and `**kwargs`
+
+`*name` collects extra positional arguments into a **tuple**, and `**name` collects extra
+keyword arguments into a **dictionary**. A function can have at most one of each, and they
+must come last:
+
+```argon
+let f(x, a = null, *args, **kwargs) = `x=$(x), a=$(a), args=$(args), kwargs=$(kwargs)`
+
+term.log(f(1))                  # x=1, a=null, args=tuple(), kwargs={}
+term.log(f(1, 2, 3, 4, k = 5))  # x=1, a=2, args=tuple(3, 4), kwargs={"k": 5}
+```
+
+### Unpacking arguments at the call site
+
+`*iterable` spreads an array or tuple into positional arguments, and `**dictionary` spreads
+a dictionary into keyword arguments:
+
+```argon
+let f(x, y, z) = x + y + z
+term.log(f(*[1, 2, 3]))              # 6
+term.log(f(1, **{y: 2, z: 3}))       # 6
+```
+
+## Returning multiple values
+
+Return an array, tuple or dictionary and [destructure](../variables/README.md#destructuring)
+it:
+
+```argon
+let min_max(items) = do
+    let sorted = array(items).sort((a, b) = a - b)
+    return [sorted[0], sorted[-1]]
+
+let [low, high] = min_max([5, 2, 9])
+term.log(low, high)   # 2 9
+```
 
 ## Recursion
 
-Functions can call themselves normally:
-
+```argon
+let fib(n) = n < 2 ? n : fib(n - 1) + fib(n - 2)
+term.log(fib(10))   # 55
 ```
-let factorial(x) = do
-    let n = x - 1
-    if (n) return x * factorial(n)
-    return 1
-```
-
-(from [`factorial.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/factorial.ar))
 
 ## Closures
 
-Functions capture variables from their enclosing scope:
+Functions capture the variables in scope where they are defined and can update them:
 
-```
-let f() = do
-    let x = 10
-    let i = 0
-    while (i < 100) do
-        i = i + 1
-        ...
+```argon
+let make_counter() = do
+    let count = 0
+    return () = do
+        count += 1
+        return count
 
-let g() = f()
-
-g()
-```
-
-(from
-[`loop_continue_and_break_test.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/loop_continue_and_break_test.ar))
-
-## Functions as methods on built-in types
-
-You can attach a method directly to a built-in type, e.g. `string`:
-
-```
-string.cool(self) = do
-    term.log(self, self.length)
-    return 10
-
-'hello world'.cool()
-string.cool('goodbye world')
+let counter = make_counter()
+counter()
+counter()
+term.log(counter())   # 3
 ```
 
-(from [`class_method.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/class_method.ar)) — note the two
-equivalent call styles: as an instance method (`'hello world'.cool()`) or as an explicit
-call on the type passing `self` (`string.cool('goodbye world')`).
+## Functions are values
+
+Functions can be stored in variables, arrays and dictionaries, passed as arguments, and
+returned from other functions:
+
+```argon
+let ops = {
+    add: (a, b) = a + b,
+    mul: (a, b) = a * b,
+}
+term.log(ops.add(2, 3), ops["mul"](2, 3))   # 5 6
+```
+
+`term.log`ging a function shows its name, e.g. `<function add at 0x...>`.
+
+## Adding methods to built-in types
+
+You can attach a method to a built-in type, and every value of that type gains it:
+
+```argon
+string.shout(self) = self.upper() + "!"
+
+term.log("hello".shout())        # HELLO!
+term.log(string.shout("hey"))    # HEY!
+```
+
+Note the two equivalent call styles: as a method on a value, or called on the type with the
+value passed as `self`. See [Classes](../classes/README.md) for more on methods.
 
 ## Next
 
+- [Strings](../strings/README.md)
 - [Classes and objects](../classes/README.md)
-- [Error handling](../error-handling/README.md)

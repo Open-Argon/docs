@@ -1,172 +1,219 @@
 # Classes and objects
 
-Chloride has "a proper class and inheritance system" (per the project README) — classes
-are real objects, supporting inheritance and introspection.
+Classes are real objects in Chloride, with inheritance and introspection.
 
 ## Defining a class
 
+```argon
+class Animal do
+    this.__init__(self, name) = do
+        self.name = name
+
+    this.speak(self) = `$(self.name) makes a sound`
+
+let pet = Animal("Rex")
+term.log(pet.speak())   # Rex makes a sound
 ```
-class name do
-    this.__init__(self) = do
-        term.log("hello world")
 
-term.log(name)      # the class itself
-term.log(name())    # calling it constructs an instance; prints "hello world"
+Inside the class body, `this` refers to the class being defined, so
+`this.method(self, ...) = ...` defines a method on it. Calling the class creates an
+instance and passes the arguments to `__init__`. The first parameter of a method receives
+the instance and is named `self` by convention.
+
+Instance attributes are created by assigning to `self` (usually in `__init__`), and can be
+added or removed at any time:
+
+```argon
+class Point do
+    this.__init__(self, x, y) = do
+        self.x = x
+        self.y = y
+
+let p = Point(1, 2)
+p.z = 3
+delete p.z
+term.log(p.x, p.y)   # 1 2
 ```
 
-(from [`class_test.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/class_test.ar))
+Reading an attribute that doesn't exist throws an error.
 
-Inside a class body, `this.method_name(self, ...) = do ... ` defines an instance method.
-The first parameter is conventionally named `self` and refers to the instance, similar to
-Python.
+The class body can be any expression. Use an empty `do`, or `null`, for a class with no
+body of its own:
+
+```argon
+class Empty do
+class AlsoEmpty(Exception) null
+```
 
 ## Inheritance
 
-Pass the parent class in parentheses after the class name:
+Put the parent class in parentheses after the class name. Methods that aren't overridden
+are inherited, and a parent's version can be called explicitly through the parent class:
 
-```
-class test(name) do
-    this.wow(self) = do
-        term.log(self)
+```argon
+class Animal do
+    this.__init__(self, name) = do
+        self.name = name
+    this.speak(self) = `$(self.name) makes a sound`
 
-test().wow()
-```
+class Dog(Animal) do
+    this.speak(self) = `$(self.name) barks`
+    this.speak_generic(self) = Animal.speak(self)
 
-(from [`class_test.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/class_test.ar)) — `test` inherits from
-`name`.
-
-## Public vs. private members
-
-Members defined with `this.member = ...` are **public** — accessible from outside the
-class. Members defined with a plain `let` inside the class body are **private** — only
-accessible from within the class's own methods:
-
-```
-class some_public_private_statics do
-    this.some_public = "hello im public"
-    let some_private = "hello im private"
-
-    this.get_the_private(self) = do
-        return some_private
-
-term.log(some_public_private_statics.some_public)   # OK — public
-term.log(some_public_private_statics.some_private)  # errors — private, not accessible
+let d = Dog("Rex")
+term.log(d.speak())           # Rex barks
+term.log(d.speak_generic())   # Rex makes a sound
+term.log(is_instance(d, Animal), is_instance(d, Dog))   # true true
 ```
 
-(from [`class_test.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/class_test.ar), which explicitly comments
-that accessing the private member from outside `# will error`)
+A class without a parent inherits from `object`.
 
-## Static vs. instance members
+## Class attributes and static methods
 
-`this.some_public` in the example above is a **static/class-level** member (accessed on
-the class itself, `some_public_private_statics.some_public`, without needing an instance).
-Instance data is normally set inside `__init__` via `self.attr = value`:
+Attributes assigned with `this.name = value` belong to the class. They're shared by every
+instance, and can be read through an instance or the class itself:
 
-```
-class custom_range do
-    this.__init__(self, stop) = do
-        self.stop = stop
-    this.__iter__(self) = custom_range_iterator(self.stop)
-```
+```argon
+class Counter do
+    this.created = 0
+    this.__init__(self) = do
+        Counter.created += 1
 
-(from [`custom_range.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/custom_range.ar))
-
-## The constructor: `__init__`
-
-`__init__` runs when the class is called like a function:
-
-```
-class something do
-    this.__init__(self, x) = do
-        self.x = x
-    this.f(self) = do
-        term.log(self, self.x, self.x = self.x + 1)
-
-let instance = something(0)
-instance.f()   # logs the instance, its x, and increments x
+Counter()
+Counter()
+term.log(Counter.created)   # 2
 ```
 
-(from [`import_test.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/import_test.ar), showing that an
-assignment like `self.x = self.x + 1` is itself an expression that returns the assigned
-value — this is why it can appear as a `term.log(...)` argument.)
+Class attributes and methods are inherited: a subclass and its instances can read them
+too. Assigning through the subclass (`Child.created = 1`) creates a separate attribute on
+the subclass rather than changing the parent's.
+
+A method defined **without** a `self` parameter is a static method, called on the class.
+Inside it, `this` still refers to the class, so `this(...)` creates an instance:
+
+```argon
+class Temperature do
+    this.__init__(self, celsius) = do
+        self.celsius = celsius
+    this.from_fahrenheit(f) = this((f - 32) * 5 / 9)
+
+term.log(Temperature.from_fahrenheit(212).celsius)   # 100
+```
+
+## Private members
+
+Variables declared with `let` inside the class body are private: methods can use them, but
+they aren't attributes of the class or its instances.
+
+```argon
+class Secretive do
+    let secret = "hidden"
+    this.reveal(self) = secret
+
+term.log(Secretive().reveal())   # hidden
+# Secretive.secret and Secretive().secret both throw
+```
+
+## Properties: `get_` and `set_`
+
+A method named `get_<name>` is called when the attribute `<name>` is read, and
+`set_<name>` is called when it is assigned. This is how built-in properties like `.length`
+work:
+
+```argon
+class Temperature do
+    this.__init__(self, celsius) = do
+        self.celsius = celsius
+    this.get_fahrenheit(self) = self.celsius * 9 / 5 + 32
+    this.set_fahrenheit(self, value) = do
+        self.celsius = (value - 32) * 5 / 9
+
+let t = Temperature(100)
+term.log(t.fahrenheit)   # 212
+t.fahrenheit = 32
+term.log(t.celsius)      # 0
+```
 
 ## Operator overloading (dunder methods)
 
-Classes can customise how they behave with built-in operators and syntax by implementing
-"dunder" (double-underscore) methods. These are exactly how the built-in types (`number`,
-`string`, `array`, etc.) implement their own behaviour, so you can make your own types work
-just as naturally.
+Classes customise how they work with operators and built-in functions by defining
+"dunder" (double-underscore) methods. The built-in types use exactly the same mechanism.
 
-| Method | Triggered by |
+| Method | Called for |
 |---|---|
-| `__init__(self, ...)` | calling the class, e.g. `MyClass(args)` |
-| `__string__(self)` | converting to a string / `term.log` |
+| `__init__(self, ...)` | `MyClass(...)`, to initialise a new instance |
+| `__new__(cls, ...)` | `MyClass(...)`, to create the instance (rarely needed, see below) |
+| `__string__(self)` | `string(obj)`, `term.log(obj)`, template strings |
+| `__repr__(self)` | how the object appears inside a printed array or dictionary |
+| `__number__(self)` | `number(obj)` |
+| `__boolean__(self)` | truthiness: `if (obj)`, `!obj`, `boolean(obj)` |
+| `__add__`, `__subtract__`, `__multiply__`, `__division__`, `__floor_division__`, `__modulo__`, `__exponent__` | `+`, `-`, `*`, `/`, `//`, `%`, `^` (with `(self, other)`) |
+| `__negation__(self)` | unary `-` |
+| `__equal__`, `__not_equal__` | `==`, `!=` |
+| `__less_than__`, `__less_than_equal__`, `__greater_than__`, `__greater_than_equal__` | `<`, `<=`, `>`, `>=` |
+| `__contains__(self, item)` | `item in obj` |
 | `__getitem__(self, key)` | `obj[key]` |
 | `__setitem__(self, key, value)` | `obj[key] = value` |
-| `__contains__(self, item)` | `item in obj` |
-| `__iter__(self)` | starting a `for` loop over `obj` |
-| `__next__(self)` | each step of a `for` loop, on an iterator object |
-| `__equal__` / `__not_equal__` | `==` / `!=` |
-| `__less_than__` / `__less_than_equal__` / `__greater_than__` / `__greater_than_equal__` | `<`, `<=`, `>`, `>=` |
-| `__add__` / `__subtract__` / `__multiply__` / `__division__` / `__floor_division__` / `__modulo__` / `__exponent__` | `+`, `-`, `*`, `/`, `//`, `%`, `**` |
-| `__negation__` | unary `-` |
-| `__hash__` | using the object as a dictionary key |
-| `__name__` | a class-level display name (used by exception types, for example) |
+| `__delitem__(self, key)` | `delete obj[key]` |
+| `__getattr__(self, name)` | reading an attribute that doesn't exist |
+| `__setattr__(self, name, value)` | assigning any attribute |
+| `__call__(self, ...)` | calling the object like a function: `obj(...)` |
+| `__iter__(self)` / `__next__(self)` | `for` loops and `array(obj)` (see [iterators](../control-flow/for/README.md#the-iterator-protocol)) |
+| `__hash__(self)` | using the object as a dictionary key (return a number) |
+| `__template__(self, parts)` | [tagged template strings](../strings/README.md#tagged-templates) |
 
-### Example: custom subscript / slice handling
+```argon
+class Vector do
+    this.__init__(self, x, y) = do
+        self.x = x
+        self.y = y
+    this.__add__(self, other) = Vector(self.x + other.x, self.y + other.y)
+    this.__multiply__(self, k) = Vector(self.x * k, self.y * k)
+    this.__equal__(self, other) = self.x == other.x && self.y == other.y
+    this.__negation__(self) = Vector(-self.x, -self.y)
+    this.__boolean__(self) = self.x != 0 || self.y != 0
+    this.__string__(self) = `Vector($(self.x), $(self.y))`
+    this.__repr__(self) = `<$(self.x), $(self.y)>`
 
-```
-class x do
-    this.__getitem__(self, key) = key
-    this.__setitem__(self, key, value) = key
-
-term.log(x()[1:2, 2])
-term.log(x()[1:2, 2] = 1)
-```
-
-(from [`slice.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/slice.ar))
-
-### Example: making a class iterable
-
-```
-class custom_range_iterator do
-    this.__init__(self, stop) = do
-        self.current = 0
-        self.stop = stop
-    this.__next__(self) = do
-        if (self.stop <= self.current) do
-            throw StopIteration()
-        let result = self.current
-        self.current = self.current + 1
-        return result
-
-class custom_range do
-    this.__init__(self, stop) = do
-        self.stop = stop
-    this.__iter__(self) = custom_range_iterator(self.stop)
+let a = Vector(1, 2)
+let b = Vector(3, 4)
+term.log(a + b, a * 3, -a)          # Vector(4, 6) Vector(3, 6) Vector(-1, -2)
+term.log(a == Vector(1, 2))         # true
+term.log(boolean(Vector(0, 0)))     # false
+term.log([a, b])                    # [<1, 2>, <3, 4>]
 ```
 
-(from [`custom_range.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/custom_range.ar)) — see
-[`for` loops and iterators](../control-flow/for/README.md) for how this plugs into `for`.
+### Customising construction with `__new__`
+
+Calling a class first calls `__new__(cls, ...)` to create the instance and then
+`__init__(self, ...)` to initialise it. To override `__new__`, call `super.__init__(cls, ...)`
+to get a new instance, then return it:
+
+```argon
+class Tracked do
+    this.__new__(cls, *args) = do
+        let instance = super.__init__(cls, *args)
+        instance.tracked = true
+        return instance
+
+term.log(Tracked().tracked)   # true
+```
 
 ## Introspection
 
-- `type(obj)` returns an object's class/type.
-- `is_instance(obj, SomeType)` checks whether `obj` is an instance of `SomeType` (or a
-  subclass).
+| Expression | Value |
+|---|---|
+| `type(obj)` | the object's class |
+| `type(obj).__name__` / `MyClass.__name__` | the class name as a string |
+| `MyClass.__base__` | the class's parent class |
+| `is_instance(obj, MyClass)` | whether `obj` is an instance of `MyClass` or a subclass |
 
+```argon
+class Animal do
+class Dog(Animal) do
+let d = Dog()
+term.log(type(d) == Dog, type(d).__name__, Dog.__base__ == Animal)   # true Dog true
 ```
-term.log(type(5))                 # number
-term.log(is_instance(5, number))  # true
-```
-
-You can also assign to class-level attributes dynamically through `type()`:
-
-```
-term.log(type(some_public_private_statics_instance).some_public = 10)
-```
-
-(from [`class_test.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/class_test.ar))
 
 ## Next
 

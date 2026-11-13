@@ -1,79 +1,79 @@
 # `path`
 
-```
+```argon
 import "path" as path
 ```
 
-A pure-Argon path manipulation library (see
-[`stdlib/path/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea43path/init.ar)), similar in spirit to
-Python's `pathlib`/`os.path`. Paths are always normalised internally to use `/` as the
-separator, even on Windows.
+Path manipulation, written in Argon. These functions only work on strings and never touch
+the filesystem. Use the [`file`](../file/README.md) module to check whether paths exist.
+
+Paths always use `/` as the separator. On Windows, `\` is converted to `/`.
 
 ## Reference
 
 | Function | Description |
 |---|---|
 | `path.sep` | the path separator (`"/"`) |
-| `path.os` | the current `platform.os` value |
-| `path.normalise(p)` | normalise a path's separators and remove trailing slashes |
-| `path.join(*parts)` | join path components together |
-| `path.split(p)` | returns `tuple(head, tail)` |
-| `path.dirname(p)` | the directory portion of a path |
-| `path.basename(p)` | the final component of a path |
-| `path.splitext(p)` | returns `tuple(root, ext)` |
-| `path.ext(p)` | just the extension, e.g. `.txt` |
-| `path.stem(p)` | the basename without its extension |
-| `path.parts(p)` | an array of path components |
-| `path.is_absolute(p)` / `path.is_relative(p)` | check whether a path is absolute |
-| `path.resolve(*parts)` | lexically resolve `.` and `..` (no filesystem access) |
-| `path.relative_to(p, base)` | express `p` relative to `base` |
-| `path.is_relative_to(p, base)` | whether `p` can be expressed relative to `base` |
-| `path.with_name(p, name)` | replace the final path component |
-| `path.with_stem(p, new_stem)` | replace the stem, keeping the extension |
-| `path.with_ext(p, new_ext)` | replace the extension |
-| `path.common_prefix(paths)` | the common leading path shared by all `paths` |
+| `path.os` | the current `platform.os` |
+| `path.join(*parts)` | join components with `/` |
+| `path.resolve(*parts)` | join components and resolve `.` and `..` |
+| `path.normalise(p)` | normalise separators and remove trailing slashes |
+| `path.split(p)` | `tuple(head, tail)` |
+| `path.dirname(p)` | everything before the last component |
+| `path.basename(p)` | the last component |
+| `path.splitext(p)` | `tuple(root, ext)` |
+| `path.ext(p)` | the extension, including the dot, e.g. `".txt"` |
+| `path.stem(p)` | the last component without its extension |
+| `path.parts(p)` | an array of components (an absolute path starts with `"/"`) |
+| `path.is_absolute(p)` / `path.is_relative(p)` | whether the path is absolute |
+| `path.relative_to(p, base)` | `p` expressed relative to `base` (throws if it isn't inside `base`) |
+| `path.is_relative_to(p, base)` | whether `p` is inside `base` |
+| `path.with_name(p, name)` | replace the last component |
+| `path.with_stem(p, stem)` | replace the stem, keeping the extension |
+| `path.with_ext(p, ext)` | replace the extension |
+| `path.common_prefix(paths)` | the longest common leading path of an array of paths |
 | `path.expand_user(p)` | expand a leading `~` to the user's home directory |
-| `path.is_hidden(p)` | whether the basename starts with `.` |
+| `path.user_directory()` | the user's home directory |
+| `path.config_directory()` | the user's configuration directory (see below) |
+| `path.is_hidden(p)` | whether the last component starts with `.` |
 
 ## Examples
 
-```
-term.log(path.join("a", "b", "c"))       # "a/b/c"
-term.log(path.dirname("/a/b/c.txt"))     # "/a/b"
-term.log(path.basename("/a/b/c.txt"))    # "c.txt"
-term.log(path.ext("/a/b/c.txt"))         # ".txt"
-term.log(path.stem("/a/b/c.txt"))        # "c"
-term.log(path.resolve("a/../b"))         # "b"
-```
-
-Locating a file relative to the current module (a common pattern used by other standard
-library modules to find their own native code):
-
-```
+```argon
 import "path" as path
 
-let __rand__ = load_native_code(
-    path.resolve(program.file.directory, "native", "bin", "random" + platform.lib_ext)
-)
+term.log(path.join("a", "b", "c"))              # a/b/c
+term.log(path.resolve("/x", "y", "../z"))       # /x/z
+term.log(path.dirname("/a/b/c.txt"))            # /a/b
+term.log(path.basename("/a/b/c.txt"))           # c.txt
+term.log(path.ext("/a/b/c.txt"))                # .txt
+term.log(path.stem("/a/b/c.txt"))               # c
+term.log(path.split("/a/b/c"))                  # tuple("/a/b", "c")
+term.log(path.splitext("archive.tar.gz"))       # tuple("archive.tar", ".gz")
+term.log(path.parts("/a/b/c"))                  # ["/", "a", "b", "c"]
+term.log(path.relative_to("/a/b/c", "/a"))      # b/c
+term.log(path.with_ext("/a/b.txt", ".md"))      # /a/b.md
+term.log(path.common_prefix(["/a/b/c", "/a/b/d"]))   # /a/b
+term.log(path.is_hidden(".git"))                # true
 ```
 
-(from [`stdlib/random/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea43random/init.ar) — see
-[`program`](../../language/modules/README.md#the-program-global) and
-[`platform`](../../language/modules/README.md#the-platform-global) for the globals used
-here)
+Finding a file next to the current module:
 
-## `path.expand_user`
-
-```
-let home = do
-    if (__is_windows__) return __normalise__(env["USERPROFILE"])
-    return env["HOME"]
+```argon
+import "path" as path
+let config = path.join(program.file.directory, "config.json")
 ```
 
-(from [`stdlib/path/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea43path/init.ar)) — this shows the
-[`env`](../../language/modules/README.md#the-env-global) global being used to find the
-user's home directory in a cross-platform way.
+## Configuration directory
+
+`path.config_directory()` returns the conventional place for per-user configuration:
+
+| OS | Directory |
+|---|---|
+| Linux / FreeBSD | `$XDG_CONFIG_HOME`, or `~/.config` |
+| macOS | `~/Library/Application Support` |
+| Windows | `%APPDATA%` |
 
 ## Next
 
-- [`json`](../json/README.md)
+- [`file`](../file/README.md)

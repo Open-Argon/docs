@@ -2,7 +2,7 @@
 
 Create a file called `hello.ar`:
 
-```
+```argon
 term.log("Hello, world!")
 ```
 
@@ -18,23 +18,27 @@ You should see:
 Hello, world!
 ```
 
+`term` is a global that is always available, so printing doesn't need an `import`.
+
 ## A quick tour
 
-Argon files use the `.ar` extension. Comments start with `#`:
+Argon files use the `.ar` extension. Comments start with `#` and run to the end of the
+line:
 
-```
+```argon
 # this is a comment
 let name = "world"
-term.log(`Hello, $(name)!`)
+term.log(`Hello, $(name)!`)   # prints: Hello, world!
 ```
 
-Notice the backtick string above — this is a **template string**, and anything inside
-`$( ... )` is evaluated as Argon code and interpolated into the string. See
-[Strings](../../language/strings/README.md) for more.
+The backtick string above is a **template string**: anything inside `$( ... )` is evaluated
+as Argon code and inserted into the string. See [Strings](../../language/strings/README.md)
+for more.
 
-Blocks in Argon are introduced with the `do` keyword rather than braces:
+Blocks are opened with the `do` keyword at the end of a line, and the indented lines below
+it form the body. The block ends when the indentation returns to the previous level:
 
-```
+```argon
 let add(a, b) = do
     return a + b
 
@@ -43,14 +47,26 @@ if (x > 3) do
     term.log("big")
 else do
     term.log("small")
+
+term.log(add(x, 10))   # 15
 ```
 
-Whitespace/indentation is not significant for parsing (the `do ... ` block continues until
-the parser determines it's finished based on structure), but you should still indent
-consistently for readability — see the examples throughout this documentation.
+Indentation **is** significant inside a `do` block, so every line of a block must use the
+same indentation (any amount of spaces works, as long as it's consistent). See
+[Syntax basics](../../language/syntax/README.md) for the full rules.
+
+When a body is a single statement, `do` isn't needed at all:
+
+```argon
+let x = 5
+if (x > 3) term.log("big")
+let square(n) = n * n
+term.log(square(x))   # 25
+```
 
 ## Next steps
 
-- [Variables and `let`](../../language/variables/README.md)
+- [Syntax basics](../../language/syntax/README.md)
+- [Variables](../../language/variables/README.md)
 - [Functions](../../language/functions/README.md)
 - [Control flow](../../language/control-flow/README.md)

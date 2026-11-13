@@ -2,95 +2,115 @@
 
 ## Dictionaries
 
-Dictionaries are written with `{ key: value, ... }`. Keys don't need to be quoted
-identifiers:
+Dictionaries map keys to values and keep their insertion order. They're written with
+`{key: value, ...}`. A bare identifier key is a string, so `{name: 1}` and `{"name": 1}`
+are the same. To use a variable's value or any other expression as a key, wrap it in
+parentheses:
 
-```
-let d = {x: 1, y: 5, z: 7}
-term.log(d["x"])
-```
-
-This is used, for example, when unpacking keyword arguments in a function call:
-
-```
-f("Hello world", *[1,2,3], **{x:1, y:5, z:7})
-```
-
-(from [`argument_unpacking.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/argument_unpacking.ar))
-
-### Indexing
-
-```
-d["key"] = value      # set
-term.log(d["key"])    # get
+```argon
+let key = "dynamic"
+let d = {
+    name: "argon",
+    "with space": 1,
+    3: "three",
+    (key): true,
+}
+term.log(d)   # {"name": "argon", "with space": 1, 3: "three", "dynamic": true}
 ```
 
-This is backed by the `__getitem__` / `__setitem__` dunder methods, same as arrays.
+`{name}` is shorthand for `{name: name}`:
 
-### Membership: `in`
-
-```
-term.log("key" in d)
-```
-
-Checks whether `d` has the given key (backed by `__contains__`).
-
-### Iterating a dictionary
-
-Iterating a dictionary yields `[key, value]` pairs:
-
-```
-for (keyval in value) do
-    let key = keyval[0]
-    let val = keyval[1]
-    ...
+```argon
+let name = "chloride"
+let version = 4
+term.log({name, version})   # {"name": "chloride", "version": 4}
 ```
 
-(adapted from [`stdlib/json/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea43json/init.ar)'s `stringify`
-function, which walks a dictionary's entries this way to build JSON output)
+Keys can be any value with a hash: strings, numbers, booleans, `null`, and objects whose
+class defines `__hash__`.
 
-### Converting to/from a dictionary
+### Reading and writing
 
-The built-in `dictionary` type can be used with `is_instance` to check if a value is a
-dictionary:
+Values can be read and written with indexing or, for keys that are valid identifiers, with
+`.`:
 
+```argon
+let d = {name: "argon"}
+d["version"] = 4
+d.stable = true
+term.log(d.name, d["version"], d.stable)   # argon 4 true
 ```
-if (is_instance(value, dictionary)) do
-    ...
+
+Reading a missing key throws an `AttributeError`. Use `in` to check first, or
+`value_get(key, default?)`, which returns `default` (or `null`) for missing keys:
+
+```argon
+let d = {a: 1}
+term.log("b" in d)             # false
+term.log(d.value_get("b"))     # null
+term.log(d.value_get("b", 0))  # 0
 ```
+
+### Removing entries
+
+```argon
+let d = {a: 1, b: 2}
+delete d.a
+delete d["b"]
+term.log(d)   # {}
+```
+
+### Iterating
+
+Iterating a dictionary yields a `tuple(key, value)` for each entry, which can be
+destructured:
+
+```argon
+let scores = {ada: 10, grace: 12}
+for ([name, score] in scores) term.log(name, score)
+```
+
+Dictionaries don't have a `length` property. Use `array(d).length` to count entries.
+
+### Creating dictionaries
+
+`dictionary(value)` copies a dictionary, or builds one from an iterable of `[key, value]`
+pairs:
+
+```argon
+term.log(dictionary([["k", "v"], ["x", 1]]))   # {"k": "v", "x": 1}
+```
+
+Like arrays, `==` on dictionaries compares identity, not contents.
 
 ## Tuples
 
-Tuples are fixed-size, ordered collections, typically returned from functions that need to
-return more than one value (Argon has no native multiple-return-value syntax, so a tuple
-fills that role). They're constructed with the `tuple(...)` built-in:
+Tuples are fixed-size, immutable sequences. Create one with `tuple(...)`, passing the items
+as arguments, or with `tuple.of(iterable)`:
 
-```
-let split(p) = do
-    ...
-    if (idx == -1) do
-        return tuple("", p)
-    ...
-    return tuple(head, tail)
+```argon
+let t = tuple(1, 2, 3)
+term.log(t)                   # tuple(1, 2, 3)
+term.log(tuple.of([4, 5]))    # tuple(4, 5)
 ```
 
-(from [`stdlib/path/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea43path/init.ar)'s `split` function,
-which returns a `tuple(head, tail)`)
+Note that `tuple([4, 5])` creates a one-item tuple containing the array.
 
-### Indexing a tuple
+Tuples support `length`, indexing, slicing (which returns a tuple), iteration and
+destructuring, but not item assignment:
 
-Tuples support the same `[index]` and `.length` as arrays:
-
+```argon
+let t = tuple("a", "b", "c")
+term.log(t.length, t[0], t[-1], t[1:])   # 3 a c tuple("b", "c")
+let [first, *rest] = t
+term.log(first, rest)                    # a ["b", "c"]
 ```
-let result = split("/a/b/c")
-term.log(result[0])   # head
-term.log(result[1])   # tail
-```
 
-### Iterating a tuple
-
-Like arrays, tuples are iterable with `for` and support `__iter__`/`__next__`.
+The interpreter uses tuples for `*args` (see [Functions](../functions/README.md)), for the
+entries yielded by dictionary iteration, and for exception
+[stack traces](../error-handling/README.md#exception-objects).
 
 ## Next
 
+- [Buffers](../buffers/README.md)
 - [Classes and objects](../classes/README.md)

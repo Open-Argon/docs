@@ -1,32 +1,26 @@
 # `break` and `continue`
 
-`break` exits the nearest enclosing loop; `continue` skips to the next iteration.
+`break` exits the nearest enclosing loop; `continue` skips to the next iteration. Both
+work in `while` and `for` loops.
 
-```
-let f() = do
-    let x = 10
-    let i = 0
-    while (i < 100) do
-        i = i + 1
-        if (i > (x * 2)) break
-        if (i > x) continue
-        term.log(i)
-
-    term.log(i, x)
-
-let g() = f()
-
-g()
+```argon
+for (i in 1 to 100) do
+    if (i > 6) break
+    if (i % 2 == 0) continue
+    term.log(i)
 ```
 
-(from
-[`loop_continue_and_break_test.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/loop_continue_and_break_test.ar))
+This prints `1`, `3` and `5`. Even numbers are skipped by `continue`, and the loop stops
+entirely once `i` reaches `7`.
 
-This example logs `1` through `10` (stopping the `term.log(i)` calls once `i > x`, via
-`continue`), then keeps looping silently until `i` exceeds `x * 2`, at which point `break`
-exits the loop entirely and the final `term.log(i, x)` runs — printing `21 10`.
+With nested loops, `break` and `continue` only affect the innermost loop:
 
-Both keywords work inside `for` loops too, in exactly the same way.
+```argon
+for (x in 1 to 3) do
+    for (y in 1 to 3) do
+        if (y > x) break
+        term.log(x, y)
+```
 
 ## Next
 

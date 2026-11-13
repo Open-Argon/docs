@@ -1,80 +1,158 @@
 # `file`
 
+```argon
+import "file" as file
 ```
-import "file" expose open
-```
 
-Filesystem I/O (native code backed), see
-[`stdlib/file/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea43file/init.ar).
+Files, directories and the standard streams.
 
-## `open(path, mode="r")`
+## Opening files: `open(path, mode="r")`
 
-Opens a file and returns a `File` object. `mode` follows familiar conventions:
-
-- Base mode: `"r"` (read), `"w"` (write, truncating), `"a"` (append), `"x"` (exclusive
-  create).
-- Modifiers: `"b"` (binary) and `"+"` (read/write), which can be combined with the base
-  mode, e.g. `"rb"`, `"w+"`.
-
-```
+```argon
 import "file" expose open
 
-let f = open("/dev/stdout", "w")
-f.write("hello world\n")
+let f = open("notes.txt", "w")
+f.write("first line\n")
+f.close()
+
+f = open("notes.txt")
+term.log(f.read())
 f.close()
 ```
 
-(from [`file_io.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/file_io.ar))
+The mode is a base mode, optionally followed by modifiers:
+
+| Base | Meaning |
+|---|---|
+| `r` | read (the file must exist) |
+| `w` | write, creating or truncating the file |
+| `a` | append, creating the file if needed |
+| `x` | create a new file, failing if it already exists |
+
+| Modifier | Meaning |
+|---|---|
+| `b` | binary: read and write [buffers](../../language/buffers/README.md) instead of strings |
+| `+` | open for both reading and writing |
+
+For example: `"rb"`, `"w+"`, `"ab"`. An invalid mode throws `file.FileError`.
 
 ## `File` methods
 
 | Method | Description |
 |---|---|
-| `.read(size?)` | read up to `size` bytes/characters, or the whole file if omitted |
-| `.write(data)` | write `data` to the file |
-| `.close()` | close the file handle |
-| `.seek(offset, whence=0)` | move the file position |
-| `.tell()` | get the current file position |
-| `.flush()` | flush any buffered writes |
+| `.read(size?)` | read up to `size` bytes, or the whole file if `size` is omitted |
+| `.write(data)` | write a string (text mode) or buffer (binary mode); returns the number of bytes written |
+| `.seek(offset, whence=0)` | move the position: `whence` is `0` (from the start), `1` (from the current position) or `2` (from the end) |
+| `.tell()` | the current position |
+| `.flush()` | flush buffered writes |
 | `.size()` | the file's size in bytes |
+| `.close()` | close the file (closing twice is harmless) |
 
-Note `.read(size?)` uses a **`?` suffix on the parameter name** to mark it optional (distinct
-from giving it a default value) — calling `.read()` with no arguments reads the entire
-file.
+Files also have `.mode` and `.closed` attributes.
+
+In text mode, `read` returns a string, and reading at the end of the file returns `""`. In
+binary mode, it returns a buffer.
+
+Reads start at the current position, so `.read()` after `.read(5)` returns the rest of the
+file:
+
+```argon
+import "file" as file
+
+let p = file.temp_file("demo-*.txt")
+let f = file.open(p, "w")
+f.write("hello world")
+f.close()
+
+f = file.open(p)
+term.log(f.read(6))   # hello
+term.log(f.read())    # world
+f.close()
+file.delete_file(p)
+```
+
+## Standard streams
+
+`file.stdin`, `file.stdout`, `file.stderr` and `file.stdnull` are already-open `File`
+objects in **binary** mode, so they read and write buffers:
+
+```argon
+import "file" as file
+
+file.stdout.write(buffer.from_string("to stdout\n"))
+file.stderr.write(buffer.from_string("to stderr\n"))
+```
+
+`file.stdin.read()` reads all of standard input as a buffer, which is useful when a
+program is used in a pipeline:
+
+```
+let input = file.stdin.read().to_string()
+```
+
+## Files and directories
+
+| Function | Description |
+|---|---|
+| `file.is_file(path)` | whether `path` is an existing file |
+| `file.is_directory(path)` | whether `path` is an existing directory |
+| `file.get_metadata(path)` | `{size, mtime, mtime_ns, device, inode}` |
+| `file.mkdir(path)` | create a directory |
+| `file.makedirs(path)` | create a directory and any missing parents; no error if it already exists |
+| `file.tree_dir(path)` | array of every file and directory under `path` (recursive, absolute paths) |
+| `file.copy_file(source, destination)` | copy a file |
+| `file.copy_dir(source, destination)` | copy a directory recursively |
+| `file.move(source, destination)` | move or rename a file or directory |
+| `file.move_contents(source, destination)` | move everything inside `source` into `destination` |
+| `file.delete_file(path)` | delete a file |
+| `file.delete_dir(path)` | delete a directory and everything in it |
+| `file.temp_file(pattern)` | create an empty temporary file and return its path |
+| `file.temp_dir(pattern)` | create a temporary directory and return its path |
+
+The temporary file functions replace the `*` in `pattern` with random characters:
+
+```argon
+import "file" as file
+import "path" as path
+
+let dir = file.temp_dir("demo-*")
+let target = path.join(dir, "a", "b")
+file.makedirs(target)
+
+let f = file.open(path.join(target, "hello.txt"), "w")
+f.write("hi")
+f.close()
+
+for (entry in file.tree_dir(dir)) term.log(path.relative_to(entry, dir))
+file.delete_dir(dir)
+```
 
 ## Exceptions
 
-`file` defines its own exception hierarchy (all subclasses of the base `FileError`), from
-[`stdlib/file/exceptions.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea43file/exceptions.ar):
+The `file` module's exceptions are available as `file.<name>`:
 
-- `FileError` — general file error base class.
-  - `FileReadError` — raised when reading fails (e.g. reading a file not opened in read
-    mode).
+- `FileError`: the base class for file errors (the same class as the global `FileError`)
   - `FileNotFoundError`
   - `FilePermissionError`
   - `FileExistsError`
+  - `FileReadError`: e.g. reading from a file that wasn't opened for reading
+  - `PathError`: the same class as the global `PathError`
+  - `TempDirectoryError`
 
-```
-import "file" expose open, FileNotFoundError
+Catch a specific error, or `FileError` for any of them:
+
+```argon
+import "file" as file
 
 try do
-    let f = open("/does/not/exist", "r")
-catch (FileNotFoundError as e) do
-    term.log("file not found:", e.message)
-```
+    file.open("/does/not/exist")
+catch (file.FileNotFoundError as e) do
+    term.log("not found:", e.message)
 
-## Modes are validated
-
-Attempting to open a file with an invalid mode string raises a `FileError` before any
-filesystem access happens — see `_validate_mode` in
-[`stdlib/file/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea43file/init.ar), which also demonstrates
-Argon's `not in` operator:
-
-```
-if (mode[0] not in valid_base) do
-    throw FileError("invalid mode: '" + mode + "'")
+try file.open("/does/not/exist")
+catch (FileError as e) term.log(type(e).__name__)   # FileNotFoundError
 ```
 
 ## Next
 
-- [`date`](../date/README.md)
+- [`json`](../json/README.md)

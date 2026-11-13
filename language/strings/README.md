@@ -1,117 +1,181 @@
 # Strings
 
-Strings can be written with single or double quotes:
+Strings can be written with double or single quotes. They are immutable.
 
-```
+```argon
 let a = "hello"
 let b = 'hello'
+term.log(a == b)   # true
+```
+
+Quoted strings must fit on one line. For multi-line text, use a template string.
+
+## Escape sequences
+
+All kinds of string support the same escapes:
+
+| Escape | Meaning |
+|---|---|
+| `\n` | newline |
+| `\t` | tab |
+| `\r` | carriage return |
+| `\b` | backspace |
+| `\f` | form feed |
+| `\\` | backslash |
+| `\/` | forward slash |
+| `\"`, `\'`, `` \` `` | a double quote, single quote or backtick |
+| `\$` | a dollar sign (use `\$(` for a literal `$(` in a template string) |
+| `\uXXXX` | a Unicode code point; surrogate pairs like `\ud83d\ude00` (😀) are combined |
+
+Any other backslash sequence is a `SyntaxError`.
+
+```argon
+term.log("tab:\there", 'it\'s', "caf\u00e9", "\ud83d\ude00")
 ```
 
 ## Template strings
 
-Backtick strings support interpolation via `$( ... )`, where anything inside the
-parentheses is evaluated as Argon code:
+Backtick strings support interpolation with `$( ... )`. The contents are evaluated as an
+Argon expression and converted to a string:
 
-```
-let wow = "this is cool"
-
-term.log(
-  `hello world
-
-$(
-  do
-    term.log("wow")
-    return wow
-)`
-)
-```
-
-(from [`templates.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/templates.ar)) — this demonstrates that the
-interpolated expression can be an entire `do` block with side effects, not just a simple
-variable.
-
-A simpler, more common case:
-
-```
+```argon
 let name = "world"
-term.log(`Hello, $(name)!`)
+let items = [1, 2, 3]
+term.log(`Hello, $(name)! You have $(items.length) items.`)
 ```
 
-Template strings also support unicode escapes like `\u1324`:
+Template strings can span multiple lines, and the interpolated expression can even be a
+`do` block:
 
+```argon
+let total = 7
+term.log(`Report
+total: $(total)
+status: $(do
+    if (total > 5) return "high"
+    return "low"
+)`)
 ```
-throw MyError(`hel\u1324lo`)
+
+A `$` that isn't followed by `(` is literal. To write a backtick or a literal `$(`, escape
+them:
+
+```argon
+term.log(`costs $5, a \` backtick, and a literal \$(not code)`)
 ```
 
-(from [`error_system.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/error_system.ar))
+### Tagged templates
 
-## Escape sequences
+Put an object directly before a template string to pass the template's pieces to that
+object's `__template__` method instead of building a string. The method receives a tuple of
+`tuple(is_text, value)` pairs: text segments with `is_text` set to `true`, and interpolated
+values with `is_text` set to `false`:
 
-Standard escapes are supported inside strings, including `\"`, `\\`, `\/`, `\b`, `\f`,
-`\n`, `\r`, `\t`, and `\uXXXX` (see the JSON standard library's string parser at
-[`stdlib/json/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea43json/init.ar) for the full escape table
-used when parsing JSON strings — the same escapes are valid in Argon string literals).
+```argon
+class Shout do
+    this.__template__(self, parts) = do
+        let out = ""
+        for ([is_text, value] in parts) do
+            if (is_text) out += value
+            else out += string(value).upper()
+        return out
+
+let shout = Shout()
+let name = "world"
+term.log(shout`hello $(name)!`)   # hello WORLD!
+```
+
+## Strings are UTF-8 bytes
+
+Strings are stored as UTF-8, and **`length`, indexing, slicing and iteration all work on
+bytes**, not characters. This only matters for non-ASCII text:
+
+```argon
+term.log("abc".length)   # 3
+term.log("é".length)     # 2
+term.log("😀".length)    # 4
+```
 
 ## Indexing and slicing
 
-Strings support the same indexing/slicing syntax as arrays — see
-[Arrays](../arrays/README.md#indexing-and-slicing) for the full slice syntax
-(`s[1:]`, `s[:5]`, `s[::-1]`, negative indices, step values, etc).
+Strings support the same indexing and slicing syntax as arrays
+(see [Arrays](../arrays/README.md#indexing-and-slicing)), with negative indices counting from
+the end:
 
-```
+```argon
 let s = "hello"
-term.log(s[0])       # "h"
-term.log(s[-1])      # "o"
-term.log(s[1:3])     # "el"
+term.log(s[0])       # h
+term.log(s[-1])      # o
+term.log(s[1:3])     # el
+term.log(s[::-1])    # olleh
 ```
 
-## Built-in string methods
+## Concatenation and conversion
 
-Strings support (at minimum) the following built-in methods and properties, based on the
-interpreter's string type implementation:
+`+` joins two strings. Other types must be converted first with `string(value)`, which
+works on every value:
+
+```argon
+term.log("a" + "b")                   # ab
+term.log("count: " + string(3))       # count: 3
+term.log(string([1, "x"]))            # [1, "x"]
+term.log(string(null), string(true))  # null true
+```
+
+Converting a string to a number uses `number(value)`:
+
+```argon
+term.log(number("42") + 1)   # 43
+```
+
+## Comparison
+
+Strings support `==`, `!=`, `<`, `<=`, `>` and `>=`, which compare byte by byte
+(lexicographically). `in` and `not in` check for substrings:
+
+```argon
+term.log("apple" < "banana")    # true
+term.log("ell" in "hello")      # true
+```
+
+## String methods
 
 | Member | Description |
 |---|---|
-| `.length` | number of characters |
-| `.upper()` | uppercase copy |
-| `.lower()` | lowercase copy |
-| `.title()` | title-cased copy |
-| `.replace(old, new)` | replace all occurrences |
-| `.split(sep)` | split into an array of strings |
-| `.strip()` | strip surrounding whitespace |
-| `.index_of(sub)` | index of a substring |
-| `.chr()` / `.ord()` | character/code-point conversion |
-| `in` | substring membership test (`"ell" in "hello"`) |
-| `[start:stop:step]` | slicing |
+| `.length` | length in bytes |
+| `.upper()` / `.lower()` | upper- / lowercase copy |
+| `.title()` | copy with the first letter of each word capitalised |
+| `.replace(old, new)` | replace every occurrence of `old` |
+| `.repeat(n)` | the string repeated `n` times |
+| `.split(sep, max_splits?)` | split into an array of strings on `sep` (must be non-empty) |
+| `.strip(chars)` | remove any of the characters in `chars` from both ends |
+| `.starts_with(prefix)` / `.ends_with(suffix)` | `true` / `false` |
+| `.index_of(sub, from?)` | byte index of the first occurrence of `sub`, or `-1` |
+| `.last_index_of(sub, from?)` | byte index of the last occurrence of `sub`, or `-1` |
+| `.ord()` | Unicode code point of a single-character string |
+| `.to_byte()` | numeric value of a single-byte string |
+| `string.chr(code_point)` | the one-character string for a code point |
+| `string.from_byte(byte)` | a one-byte string from a number 0 to 255 |
 
+```argon
+let s = "Hello, World"
+term.log(s.upper(), s.lower())             # HELLO, WORLD hello, world
+term.log("hello world".title())            # Hello World
+term.log(s.replace("l", "L"))              # HeLLo, WorLd
+term.log("ab".repeat(3))                   # ababab
+term.log("a,b,c".split(","))               # ["a", "b", "c"]
+term.log("a,b,c".split(",", 1))            # ["a", "b,c"]
+term.log("  padded  ".strip(" "))          # padded
+term.log("--x--".strip("-"))               # x
+term.log(s.index_of("o"), s.index_of("o", 5), s.last_index_of("o"))   # 4 8 8
+term.log("A".ord(), string.chr(128512))    # 65 😀
 ```
-let __starts_with__(s, prefix) = do
-    if (prefix.length > s.length) do
-        return false
-    return s[0:prefix.length] == prefix
-```
 
-(from [`stdlib/path/init.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea43path/init.ar), showing `.length` and
-slicing used together)
+`strip` always needs the set of characters to remove. To trim ordinary whitespace, pass
+`" \t\n\r"`.
 
-## Comparing strings
-
-Strings support the usual comparison operators (`==`, `!=`, `<`, `<=`, `>`, `>=`), which
-compare lexicographically.
-
-## Joining strings
-
-Arrays of strings can be joined with `.join(sep)` — see
-[Arrays](../arrays/README.md#join).
-
-## Converting to a string
-
-Every object has a `__string__()` method used for display/printing, and calling
-`string(value)` converts any value to its string form:
-
-```
-term.log(string(123))     # "123"
-```
+To join an array of strings, use the array's [`join`](../arrays/README.md#array-methods)
+method: `["a", "b"].join(", ")`.
 
 ## Next
 

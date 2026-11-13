@@ -1,151 +1,88 @@
 # `threading`
 
-```
+```argon
 import "threading" as threading
 ```
 
-Provides support for running code in separate threads and storing thread-local data.
+Runs functions on separate operating system threads.
 
 ## `threading.Thread(target)`
 
-Creates a new thread that executes the given function.
+Creates a thread that will call `target()` (with no arguments) when started.
 
-The target function is called with no arguments when the thread starts.
+| Method | Description |
+|---|---|
+| `start()` | start the thread; returns the `Thread`, so it can be chained |
+| `join()` | wait for the thread to finish and return `target`'s return value |
+| `detach()` | let the thread run independently; it can't be joined afterwards |
 
-```
-let thread = threading.Thread(()=do
-    term.log("Hello from a thread")
-)
+```argon
+import "threading" as threading
 
-thread.start()
-```
-
-The target function's return value can be retrieved using `join()`.
-
-## `Thread.start()`
-
-Starts the thread.
-
-```
-let thread = threading.Thread(()=do
-    term.log("Running")
-)
-
-thread.start()
-```
-
-Returns the `Thread` object, allowing threads to be created and started inline:
-
-```
-let thread = threading.Thread(()=do
-    do_work()
+let worker = threading.Thread(() = do
+    let total = 0
+    for (i in 1 to 100) total += i
+    return total
 ).start()
+
+term.log(worker.join())   # 5050
 ```
 
-Calling `start()` on an already started thread has no effect.
+If `target` throws, the exception is rethrown by `join()`:
 
-## `Thread.join()`
+```argon
+import "threading" as threading
 
-Waits for the thread to finish and returns the value returned by the target function.
+let t = threading.Thread(() = do
+    throw ValueError("failed in thread")
+).start()
 
-```
-let thread = threading.Thread(()=do
-    return 42
-)
-
-thread.start()
-
-let result = thread.join()
-
-term.log(result)   # 42
+try t.join()
+catch (ValueError as e) term.log("caught:", e.message)
 ```
 
-If the thread has not been started, `join()` immediately returns the current return value.
+Calling `start()` on a thread that has already been started does nothing (and returns
+`null`). Calling `join()` on a thread that was never started returns `null` immediately.
 
-## `Thread.detach()`
+To pass arguments, capture them in a closure:
 
-Detaches the thread, allowing it to continue running independently.
+```argon
+import "threading" as threading
 
+let square(n) = n * n
+let threads = []
+for (i in 1 to 4) do
+    let n = i
+    threads.append(threading.Thread(() = square(n)).start())
+
+term.log(threads.map((t) = t.join()))   # [1, 4, 9, 16]
 ```
-let thread = threading.Thread(()=do
-    do_work()
-)
-
-thread.start()
-thread.detach()
-```
-
-A detached thread cannot be joined later.
 
 ## `threading.get_id()`
 
-Returns the ID of the current thread.
-
-```
-let id = threading.get_id()
-
-term.log(id)
-```
+Returns a number identifying the current thread.
 
 ## `threading.Local()`
 
-Creates thread-local storage.
+Thread-local storage: an object whose attributes (or items) have a separate value in each
+thread.
 
-Each thread has its own separate storage. Values assigned in one thread are not visible in other threads.
+```argon
+import "threading" as threading
 
-```
 let local = threading.Local()
-
-let worker = ()=do
-    local.value = 10
-    term.log(local.value)
-
-let thread = threading.Thread(worker)
-
-thread.start()
-thread.join()
-
-term.log(local.value)
-```
-
-Thread-local values can be accessed using attributes or indexing:
-
-```
-let local = threading.Local()
-
 local.name = "main"
-term.log(local.name)
 
-local["count"] = 5
-term.log(local["count"])
+threading.Thread(() = do
+    local.name = "worker"
+    term.log("in thread:", local.name)   # worker
+).start().join()
+
+term.log("in main:", local.name)          # main
 ```
 
-Each thread maintains its own values internally.
-
-## Example: running multiple workers
-
-```
-let storage = threading.Local()
-
-let worker = (value)=do
-    storage.value = value
-
-    let output = 1000000
-    for (i in 0 until output) do
-    return output
-
-let threads = []
-
-for (i in 0 until 4) do
-    threads.append(threading.Thread(()=worker(i)).start())
-
-for (thread in threads) do
-    term.log(thread.join())
-```
-
-Each worker has its own `storage.value`, even though all workers share the same `Local` object.
+Values can be accessed as attributes (`local.name`) or items (`local["name"]`).
 
 ## Next
 
-- [`network`](../network/README.md)
-- [`time`](../time/README.md)
+- [`subprocess`](../subprocess/README.md)

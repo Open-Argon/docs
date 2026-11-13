@@ -1,43 +1,42 @@
 # `while` loops
 
-```
+```argon
 let i = 0
 while (i < 10) do
     term.log(i)
     i += 1
 ```
 
-A `while` loop with a truthy constant condition (e.g. a non-zero length) can be used to
-drain a collection:
+The body can be a single statement:
 
-```
-import "random" expose random
-
-let x = []
-let i = 0
-
-while (i < 1e6) do
-    x.append(i)
-    i = i + 1
-
-let y = []
-while (x.length) do             # loops while x.length is truthy (non-zero)
-    let result = x.pop(random.int(0, x.length - 1))
-    y.append(result)
+```argon
+let n = 1
+while (n < 1000) n *= 2
+term.log(n)   # 1024
 ```
 
-(from [`array_pop.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/array_pop.ar))
+The condition is re-evaluated before each iteration and can be any expression, including
+an assignment. This loop keeps going while the popped value is truthy:
 
-## `while` as an expression-friendly loop
-
-`while` conditions are parenthesized expressions, so they can contain assignments,
-function calls, comparisons, etc. — anything that evaluates to a value.
+```argon
+let queue = ["a", "b", "c"]
+let item
+while (item = queue.length ? queue.pop(0) : null) do
+    term.log("processing", item)
+```
 
 ## Infinite loops
 
-There's no dedicated `loop` keyword; use `while (true) do ...` and `break` to exit (see
-[`break` and `continue`](../break-continue/README.md)). The test suite has a file named
-[`foreverloop.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/foreverloop.ar) demonstrating this pattern.
+`forever` loops until it is stopped with `break` or `return` (see
+[`break` and `continue`](../break-continue/README.md)). It's the same as `while (true)`:
+
+```argon
+let attempts = 0
+forever do
+    attempts += 1
+    if (attempts >= 3) break
+term.log(attempts)   # 3
+```
 
 ## Next
 

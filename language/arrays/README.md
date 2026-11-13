@@ -1,147 +1,121 @@
 # Arrays
 
-Arrays are ordered, mutable, heterogeneous collections written with `[ ]`:
+Arrays are ordered, mutable collections that can hold values of any type:
 
-```
+```argon
 let x = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-term.log(x[3])   # 3
+let mixed = [1, "two", [3], {four: 4}]
+term.log(x[3], x.length)   # 3 10
 ```
-
-(from [`array.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/array.ar))
 
 ## Indexing and slicing
 
-Arrays (and strings) support Python-style slicing: `array[start:stop:step]`, with negative
-indices counting from the end:
+Indexes start at `0`. Negative indexes count from the end. Indexing past the end throws an
+`IndexError`.
 
-```
-let x = [0,1,2,3,4,5,6,7,8,9]
+Slices use `array[start:stop:step]`, like Python. Any part can be omitted, and the result
+is a new array:
 
-term.log(x[1:])      # [1,2,3,4,5,6,7,8,9]
-term.log(x[:5])      # [0,1,2,3,4]
-term.log(x[:5:2])    # [0,2,4]
-term.log(x[::-1])    # reversed: [9,8,7,6,5,4,3,2,1,0]
-term.log(x[-1::])    # [9]
-term.log(x[-1:2:])   # [] (start after stop, forward step)
-term.log(x[-1::-1])  # reversed from the end
-```
+```argon
+let x = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
-(from [`array_slice.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/array_slice.ar))
-
-Any part of the slice (`start`, `stop`, or `step`) can be omitted.
-
-## Multiple slice arguments
-
-Custom classes can implement `__getitem__`/`__setitem__` to accept multiple comma-separated
-arguments in the subscript, e.g.:
-
-```
-class x do
-    this.__getitem__(self, key) = key
-    this.__setitem__(self, key, value) = key
-
-term.log(x()[1:2, 2])
-term.log(x()[1:2, 2] = 1)
+term.log(x[-1])      # 9
+term.log(x[1:])      # [1, 2, 3, 4, 5, 6, 7, 8, 9]
+term.log(x[:5])      # [0, 1, 2, 3, 4]
+term.log(x[:5:2])    # [0, 2, 4]
+term.log(x[::-1])    # [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
+term.log(x[-3:])     # [7, 8, 9]
 ```
 
-(from [`slice.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/slice.ar)) — here `key` receives a tuple
-representing both the slice `1:2` and the plain index `2`.
+A slice can also be created as a value with the `slice` type, and used as an index:
 
-## Mutation
-
-```
-let x = []
-x.append(1)
-x.append(2)
-x[0] = 10
+```argon
+let s = slice(1, 5, 2)
+term.log([0, 1, 2, 3, 4, 5][s])   # [1, 3]
 ```
 
-## Built-in array methods
+## Changing arrays
+
+```argon
+let x = [1, 2, 3]
+x[0] = 10           # replace an item
+x.append(4, 5)      # add to the end
+x.insert(1, "a")    # insert before index 1
+delete x[2]         # remove an item
+x[0:2] = ["z"]      # replace a slice
+term.log(x)         # ["z", 3, 4, 5]
+```
+
+`length` is read-only: assigning to it throws an error.
+
+## Array methods
 
 | Member | Description |
 |---|---|
-| `.length` | number of elements |
-| `.append(value)` | add an element to the end |
-| `.insert(index, value)` | insert at a position |
-| `.pop(index)` | remove and return the element at `index` (or the last element) |
-| `.join(sep)` | join elements into a string, separated by `sep` |
-| `.map(fn)` | return a new array with `fn` applied to each element |
-| `.filter(fn)` | return a new array of elements where `fn` returns truthy |
-| `.sort(fn)` | sort in place using a comparator function |
-| `in` | membership test |
-| `[start:stop:step]` | slicing (see above) |
+| `.length` | number of items |
+| `.append(*values)` | add values to the end; returns the array |
+| `.insert(index, *values)` | insert values before `index`; returns the array |
+| `.pop(index?)` | remove and return the item at `index` (default: the last item) |
+| `.join(sep)` | join an array of strings into one string |
+| `.map(fn)` | new array with `fn(item)` applied to each item |
+| `.filter(fn)` | new array of the items for which `fn(item)` is truthy |
+| `.sort(compare)` | sort **in place** with a comparator; returns the array |
+| `array.of_size(n)` | new array of `n` `null`s |
 
-### `.pop`
-
-```
-import "random" expose random
-
-let x = []
-let i = 0
-while (i < 1e6) do
-    x.append(i)
-    i = i + 1
-
-let y = []
-while (x.length) do
-    let result = x.pop(random.int(0, x.length - 1))
-    y.append(result)
+```argon
+let nums = [5, 3, 8, 1]
+term.log(nums.map((n) = n * 2))             # [10, 6, 16, 2]
+term.log(nums.filter((n) = n > 2))          # [5, 3, 8]
+term.log(nums.sort((a, b) = a - b))         # [1, 3, 5, 8]
+term.log(nums.pop(), nums.pop(0), nums)     # 8 1 [3, 5]
+term.log(["a", "b", "c"].join(", "))        # a, b, c
 ```
 
-(from [`array_pop.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/array_pop.ar)) — this shuffles `x` into `y`
-by repeatedly popping a random element.
+`sort` always needs a comparator function. It should return a negative number if `a` comes
+first, a positive number if `b` comes first, and `0` if they're equal. For strings, use a
+comparison:
 
-### `.map`, `.filter`, `.sort` (chained)
-
-```
-term.log(
-  array(range(-1000000, 1000000))
-    .map((val) = val * val)
-    .filter((val) = val < 10000)
-    .sort((a, b) = a < b ? -1 : a > b ? 1 : 0)
-)
+```argon
+let words = ["pear", "apple", "fig"]
+words.sort((a, b) = a < b ? -1 : a > b ? 1 : 0)
+term.log(words)   # ["apple", "fig", "pear"]
 ```
 
-(from [`map_filter_sort.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/map_filter_sort.ar)) — `range(...)`
-produces a range object, and `array(...)` converts it to a concrete array first.
+`join` only accepts arrays of strings. Convert other values first:
+`[1, 2].map((n) = string(n)).join(",")`.
 
-### Random shuffle via swapping
+## Creating arrays from other values
 
-```
-import "random" expose random
+`array(iterable)` builds a new array from anything iterable. This is also the way to copy an
+array:
 
-let x = []
-let i = 0
+```argon
+term.log(array(1 to 3))              # [1, 2, 3]
+term.log(array("abc"))               # ["a", "b", "c"]
+term.log(array(tuple(1, 2)))         # [1, 2]
+term.log(array({a: 1, b: 2}))        # [tuple("a", 1), tuple("b", 2)]
 
-while (i < 1e5) do
-    x.append(i)
-    i = i + 1
-
-i = 0
-let len = x.length
-while (i < len) do
-    let random_index = random.int(0, len - 1)
-    let temp = x[len - 1]
-    x[len - 1] = x[random_index]
-    x[random_index] = temp
-    i = i + 1
-
-term.log(x)
+let original = [1, 2]
+let copy = array(original)
+copy.append(3)
+term.log(original, copy)             # [1, 2] [1, 2, 3]
 ```
 
-(from [`array_set.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/array_set.ar)) — shows direct index
-assignment (`x[i] = value`) used to implement a Fisher–Yates-style shuffle.
+## Membership and equality
+
+```argon
+term.log(2 in [1, 2, 3], 5 not in [1, 2, 3])   # true true
+```
+
+`==` on arrays compares identity, not contents: `[1] == [1]` is `false`.
 
 ## Iteration
 
-Arrays are iterable with `for`:
-
-```
-for (item in [1, 2, 3]) do
-    term.log(item)
+```argon
+for (item in ["a", "b"]) term.log(item)
 ```
 
-See [`for` loops](../control-flow/for/README.md) for the underlying iterator protocol.
+See [`for` loops](../control-flow/for/README.md).
 
 ## Next
 

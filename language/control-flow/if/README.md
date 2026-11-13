@@ -1,6 +1,6 @@
 # `if` / `else`
 
-```
+```argon
 let x = 5
 
 if (x > 10) do
@@ -11,32 +11,44 @@ else do
     term.log("zero or negative")
 ```
 
+`else` and `else if` must start a new line at the same indentation as the `if`.
+
 ## Single-statement form
 
-If the body is a single statement, `do` can be omitted:
+If a branch is a single statement, `do` can be omitted:
 
-```
+```argon
 let factorial(x) = do
-    let n = x - 1
-    if (n) return x*factorial(n)
-    return 1
-```
+    if (x <= 1) return 1
+    return x * factorial(x - 1)
 
-(from [`factorial.ar`](https://git.wbell.dev/Open-Argon/Chloride/src/commit/8e1ee06b88200ab112cf34e49efe969030ea435c/tests/factorial.ar))
+let n = 7
+if (n % 2 == 0) term.log("even")
+else term.log("odd")
+
+term.log(factorial(5))   # 120
+```
 
 ## Truthiness
 
-Any value can be used as a condition. `0`, `null`, `false`, and empty strings/collections
-are falsy; everything else is truthy. In the `factorial.ar` example above, `if (n)` is
-shorthand for "if `n` is not zero".
+Any value can be used as a condition. `false`, `null`, `0` and `""` are falsy; everything
+else is truthy, **including empty arrays and dictionaries**. See
+[Variables: truthiness](../../variables/README.md#truthiness).
 
-## Ternary expression
-
-For simple conditional *expressions* (not statements), see the ternary operator described
-in [Operators](../../operators/README.md#ternary-conditional-expression):
-
+```argon
+let items = []
+if (items.length) term.log("has items")
+else term.log("empty")
 ```
-let sign = a < b ? -1 : a > b ? 1 : 0
+
+## Conditional expressions
+
+`if` is a statement. For a conditional *value*, use the ternary operator:
+
+```argon
+let a = 3
+let sign = a < 0 ? -1 : a > 0 ? 1 : 0
+term.log(sign)   # 1
 ```
 
 ## Next

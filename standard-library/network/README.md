@@ -1,210 +1,208 @@
 # `network`
 
-```
+```argon
 import "network" as network
 ```
 
-Provides TCP networking support, including TCP servers, clients, sending and receiving data, and socket configuration.
+TCP sockets, TLS client sockets and an HTTP/HTTPS client.
 
-## Socket errors
+## HTTP client
 
-Network failures raise `network.SocketError`.
+`network.http` provides `get`, `post`, `put`, `del` and `request`:
+
+```argon
+import "network" expose http
+
+let resp = http.get("https://isotope.wbell.dev/")
+term.log(resp.status, resp.ok())   # 200 true
+term.log(resp.headers.value_get("Content-Type"))
+let body = resp.text()
+```
+
+URLs can use `http://` or `https://` and may include a port (`http://localhost:8080/api`).
+
+| Function | Description |
+|---|---|
+| `http.get(url, headers=null, ...)` | send a `GET` request |
+| `http.post(url, body=null, headers=null, ...)` | send a `POST` request |
+| `http.put(url, body=null, headers=null, ...)` | send a `PUT` request |
+| `http.del(url, headers=null, ...)` | send a `DELETE` request |
+| `http.request(method, url, headers=null, body=null, ...)` | send a request with any method |
+
+Every function also accepts these keyword arguments:
+
+| Argument | Default | Description |
+|---|---|---|
+| `verify_peer` | `true` | verify the server's TLS certificate |
+| `ca_path` | `null` | path to a CA certificate bundle to verify against |
+| `timeout_ms` | `30000` | how long to wait for data |
+| `max_header_size` | `65536` | maximum response header size in bytes |
+| `auto_close` | `true` | close the connection once the body has been read |
+
+`headers` is a dictionary. `body` may be a string, a buffer, a `multipart_form` (see below),
+or any iterable that yields buffers. A `Content-Length` header is added automatically for
+strings, buffers and forms, and `Connection: close` is sent unless you set `Connection`
+yourself.
+
+```argon
+import "network" expose http
+import "json" as json
+
+let resp = http.post(
+    "https://example.com/api/items",
+    body = json.stringify({name: "widget"}),
+    headers = {"Content-Type": "application/json"},
+)
+```
+
+### Responses
+
+| Member | Description |
+|---|---|
+| `status` | the status code, e.g. `404` |
+| `status_text` | the reason phrase, e.g. `"Not Found"` |
+| `headers` | a dictionary of response headers (names as sent by the server) |
+| `ok()` | `true` for a 2xx status |
+| `text()` | the whole body as a string |
+| `json()` | the body parsed as JSON |
+| `bytes()` | the whole body as a buffer |
+| `content_length()` | the `Content-Length` header as a number, or `null` |
+| `chunk()` | the next chunk of the body as a buffer, or `null` at the end |
+| `close()` | close the connection early |
+
+A response is also iterable, yielding the body in buffer chunks. This lets you stream large
+downloads to disk without holding them in memory:
+
+```argon
+import "network" expose http
+import "file" expose open
+
+let resp = http.get("https://isotope.wbell.dev/")
+let out = open("page.html", "wb")
+for (chunk in resp) out.write(chunk)
+out.close()
+```
+
+The body can only be read once.
+
+Network errors throw `network.HTTPError` (for timeouts and broken responses),
+`network.SocketError` (when the connection fails) or `network.TLSError`. A non-2xx status
+does **not** throw; check `ok()` or `status`.
+
+### Multipart forms
+
+`network.multipart_form` builds a `multipart/form-data` body, for example for file uploads.
+File contents are streamed from disk while sending, not loaded into memory:
+
+```argon
+import "network" expose http, multipart_form
+import "file" expose open
+
+let form = multipart_form()
+form.field("name", "Ada")
+form.file("avatar", "photo.jpg", open("photo.jpg", "rb"))
+
+let resp = http.post(
+    "https://example.com/upload",
+    body = form,
+    headers = {"Content-Type": form.content_type()},
+)
+```
+
+`form.file(field_name, filename, file, content_type=null)` takes ownership of the open file
+and closes it once it has been sent. If `content_type` is omitted, it is guessed from the
+file name's extension. Pass the form's `content_type()` (which includes the boundary) as the
+`Content-Type` header.
+
+## TCP
+
+### Servers: `network.tcp(port)`
+
+Listens on `port` on all interfaces. `accept()` waits for a client and returns a
+connection:
 
 ```
-try do
-    let client = network.tcp_client("example.com", 80)
-catch network.SocketError as e do
-    term.log("Connection failed")
-```
+import "network" as network
 
-## `network.tcp(port)`
-
-Creates a TCP server socket listening on the specified port.
-
-```
 let server = network.tcp(8080)
+while (true) do
+    let conn = server.accept()
+    let message = conn.recv_string(1024)
+    conn.send_string("Received: " + message)
+    conn.close()
 ```
 
-Connections can be accepted using `accept()`:
+### Clients: `network.tcp_client(host, port)`
 
 ```
-let connection = server.accept()
-```
+import "network" as network
 
-## `network.tcp.accept()`
-
-Waits for and accepts an incoming TCP connection.
-
-Returns a `tcp_connection` object.
-
-```
-let server = network.tcp(8080)
-
-let client = server.accept()
-```
-
-## `network.tcp_client(host, port)`
-
-Connects to a TCP server.
-
-```
 let client = network.tcp_client("localhost", 8080)
+client.send_string("Hello!")
+term.log(client.recv_string(1024))
+client.close()
 ```
 
-The returned object can send and receive data.
+### Socket methods
 
-## Sending and receiving data
+Connections returned by `accept()` and clients created with `tcp_client` share these methods:
 
-### `send(buffer)`
+| Method | Description |
+|---|---|
+| `send(buffer)` | send bytes; returns the number sent |
+| `send_string(string)` | send a string; returns the number of bytes sent |
+| `recv(buffer)` | receive into `buffer`; returns the number of bytes received (`0` when the other side has closed) |
+| `recv_string(size)` | receive up to `size` bytes and return them as a string |
+| `peek(buffer)` | like `recv`, but leaves the data in the socket |
+| `poll(want_read, want_write, timeout_ms)` | wait until the socket is ready (see below) |
+| `set_nonblocking(enable)` | make operations return immediately instead of waiting |
+| `set_opt(option, value)` | set a socket option (see below) |
+| `close()` | close the socket |
 
-Sends raw data through the socket.
+Servers support `accept()`, `poll`, `set_nonblocking`, `set_opt` and `close()`.
 
-```
-client.send(buffer)
-```
+Connection failures throw `network.SocketError`:
 
-Returns the number of bytes sent.
+```argon
+import "network" as network
 
-### `send_string(string)`
-
-Sends a string through the socket.
-
-```
-client.send_string("Hello, server!")
-```
-
-Returns the number of bytes sent.
-
-### `recv(buffer)`
-
-Receives data into a buffer.
-
-```
-client.recv(buffer)
+try network.tcp_client("127.0.0.1", 1)
+catch (network.SocketError as e) term.log(e.message)   # failed to connect to 127.0.0.1:1
 ```
 
-Returns the number of bytes received.
+### Polling
 
-### `recv_string(size)`
-
-Receives up to `size` bytes and returns them as a string.
-
-```
-let message = client.recv_string(1024)
-```
-
-### `peek(buffer)`
-
-Reads data without removing it from the socket receive buffer.
+`poll(want_read, want_write, timeout_ms)` waits until the socket is ready, and returns a
+bitmask of `network.NET_POLL_READ` (`1`) and `network.NET_POLL_WRITE` (`2`). It returns `0`
+if the timeout expired and `-1` on error. A timeout of `-1` waits forever.
 
 ```
-client.peek(buffer)
+let ready = client.poll(true, false, 1000)
+if (ready > 0) term.log(client.recv_string(1024))
+else if (ready == 0) term.log("timed out")
 ```
 
-## Polling
-
-Sockets can be checked for readiness using `poll()`.
-
-### `poll(want_read, want_write, timeout_ms)`
-
-Waits until a socket is ready for reading or writing.
-
-Returns a bitmask containing one or more of:
-
-| Constant | Value | Meaning |
-| --- | --- | --- |
-| `NET_POLL_READ` | `1` | Socket is ready for reading |
-| `NET_POLL_WRITE` | `2` | Socket is ready for writing |
-
-A return value of `0` indicates that the timeout expired.
-
-A return value of `-1` indicates an error.
-
-Example:
-
-```
-let result = client.poll(true, false, 1000)
-
-if (result & network.NET_POLL_READ) do
-    let data = client.recv_string(1024)
-```
-
-A timeout of `-1` blocks indefinitely.
-
-## Non-blocking sockets
-
-### `set_nonblocking(enable)`
-
-Enables or disables non-blocking mode.
-
-```
-client.set_nonblocking(true)
-```
-
-When enabled, socket operations return immediately instead of waiting.
-
-## Socket options
-
-### `set_opt(option, value)`
-
-Sets a socket option.
-
-Available options:
+### Socket options
 
 | Constant | Meaning |
-| --- | --- |
-| `NET_OPT_KEEPALIVE` | Enable TCP keepalive |
-| `NET_OPT_NODELAY` | Disable Nagle's algorithm |
-| `NET_OPT_REUSEADDR` | Allow address reuse |
-| `NET_OPT_RCVTIMEO` | Set receive timeout |
-| `NET_OPT_SNDTIMEO` | Set send timeout |
-
-Example:
+|---|---|
+| `network.NET_OPT_KEEPALIVE` | enable TCP keepalive |
+| `network.NET_OPT_NODELAY` | disable Nagle's algorithm |
+| `network.NET_OPT_REUSEADDR` | allow reusing the address |
+| `network.NET_OPT_RCVTIMEO` | receive timeout |
+| `network.NET_OPT_SNDTIMEO` | send timeout |
 
 ```
 client.set_opt(network.NET_OPT_NODELAY, true)
 ```
 
-## Closing sockets
+## TLS
 
-### `close()`
-
-Closes the socket and releases its resources.
-
-```
-client.close()
-server.close()
-```
-
-## Example TCP server
-
-```
-let server = network.tcp(8080)
-
-while true do
-    let connection = server.accept()
-
-    let message = connection.recv_string(1024)
-    connection.send_string("Received: " + message)
-
-    connection.close()
-```
-
-## Example TCP client
-
-```
-let client = network.tcp_client("localhost", 8080)
-
-client.send_string("Hello!")
-
-let response = client.recv_string(1024)
-
-term.log(response)
-
-client.close()
-```
+`network.tls_client(host, port, verify_peer=true, ca_path=null)` opens an encrypted
+connection. It supports `send`, `send_string`, `recv`, `recv_string`, `poll` and `close`.
+`network.TLS_SUPPORTED` is `false` if the interpreter was built without TLS support, in which
+case creating a TLS client throws `network.TLSError`.
 
 ## Next
 
-- [`time`](../time/README.md)
-- [`date`](../date/README.md)
+- [`url`](../url/README.md)

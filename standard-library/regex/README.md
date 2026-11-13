@@ -1,148 +1,71 @@
 # `regex`
 
-```
+```argon
 import "regex" as regex
 ```
 
-Provides regular expression matching, searching, replacing, and splitting using compiled regular expressions.
+Regular expressions, using the [PCRE2](https://www.pcre.org/current/doc/html/pcre2syntax.html)
+syntax (the same as Perl and most other languages).
+
+Remember that `\` must be escaped inside Argon strings, so the pattern `\d+` is written
+`"\\d+"`.
 
 ## `regex.Regex(pattern)`
 
-Creates a compiled regular expression from a pattern.
+Compiles a pattern. An invalid pattern throws `regex.RegexError`:
 
+```argon
+import "regex" as regex
+
+let number = regex.Regex("[0-9]+")
+
+try regex.Regex("[")
+catch (regex.RegexError as e) term.log("invalid pattern")
 ```
-let re = regex.Regex("[0-9]+")
 
-term.log(re.match("123"))
+## Methods
+
+| Method | Returns |
+|---|---|
+| `.match(subject)` | `true` if the pattern matches **anywhere** in `subject` |
+| `.find(subject)` | the first match as an array `[whole_match, group1, group2, ...]`, or `[]` if there is no match |
+| `.find_all(subject)` | an array of every match, each in the same form as `find` |
+| `.group(subject, index)` | capture group `index` of the first match (`0` is the whole match) |
+| `.replace(subject, replacement)` | `subject` with the first match replaced |
+| `.replace_all(subject, replacement)` | `subject` with every match replaced |
+| `.split(subject)` | `subject` split on every match |
+| `.close()` | free the compiled pattern |
+
+Anchor the pattern with `^` and `$` to test whether a whole string matches.
+
+```argon
+import "regex" as regex
+
+let re = regex.Regex("([a-z]+)([0-9]+)")
+term.log(re.match("abc123"), re.match("!!"))      # true false
+term.log(re.find("x abc123 def45"))               # ["abc123", "abc", "123"]
+term.log(re.find_all("abc123 def45"))             # [["abc123", "abc", "123"], ["def45", "def", "45"]]
+term.log(re.group("abc123", 2))                   # 123
+term.log(re.replace_all("abc123 def45", "N"))     # N N
+
+term.log(regex.Regex(",\\s*").split("a, b,c"))    # ["a", "b", "c"]
+term.log(regex.Regex("^[0-9]+$").match("123x"))  # false
 ```
-
-Compiled regular expressions can be reused multiple times.
 
 ## `Regex.intern(pattern)`
 
-Creates or retrieves a shared compiled regular expression.
+Returns a shared, cached compiled regex for `pattern`, compiling it only the first time.
+This is useful for patterns used repeatedly in a loop or function:
 
-Interned regular expressions are cached and reused when the same pattern is requested multiple times.
+```argon
+import "regex" as regex
 
-```
-let a = regex.Regex.intern("[a-z]+")
-let b = regex.Regex.intern("[a-z]+")
-
-term.log(a == b)
-```
-
-Interned regular expressions are managed automatically and cannot be manually freed.
-
-## `Regex.close()`
-
-Frees the resources used by a regular expression.
-
-```
-let re = regex.Regex("hello")
-
-re.close()
+let is_word(s) = regex.Regex.intern("^[a-z]+$").match(s)
+term.log(is_word("hello"), is_word("hi there"))   # true false
 ```
 
-Calling `close()` on an interned regular expression raises a `RuntimeError`.
-
-## `Regex.match(subject)`
-
-Checks whether the regular expression matches the given string.
-
-```
-let re = regex.Regex("^hello")
-
-term.log(re.match("hello world"))
-```
-
-Returns the match result from the regular expression engine.
-
-## `Regex.find(subject)`
-
-Finds the first match in a string.
-
-```
-let re = regex.Regex("[0-9]+")
-
-let result = re.find("abc123def")
-
-term.log(result)
-```
-
-Returns the first matching result, or an empty result if no match is found.
-
-## `Regex.find_all(subject)`
-
-Finds all matches in a string.
-
-```
-let re = regex.Regex("[0-9]+")
-
-let results = re.find_all("abc123def456")
-
-term.log(results)
-```
-
-Returns an array containing every match.
-
-## `Regex.replace(subject, replacement)`
-
-Replaces the first match with the given replacement.
-
-```
-let re = regex.Regex("[0-9]+")
-
-term.log(re.replace("abc123", "x"))
-```
-
-## `Regex.replace_all(subject, replacement)`
-
-Replaces every match with the given replacement.
-
-```
-let re = regex.Regex("[0-9]+")
-
-term.log(re.replace_all("abc123def456", "x"))
-# "abcxdefx"
-```
-
-## `Regex.split(subject)`
-
-Splits a string using the regular expression as the delimiter.
-
-```
-let re = regex.Regex(",")
-
-let parts = re.split("one,two,three")
-
-term.log(parts)
-# ["one", "two", "three"]
-```
-
-## Errors
-
-Invalid regular expression patterns raise `RegexError`.
-
-```
-regex.Regex("[")
-# RegexError
-```
-
-## Example
-
-```
-let number = regex.Regex("[0-9]+")
-
-let text = "There are 123 apples and 456 oranges"
-
-term.log(number.find_all(text))
-# ["123", "456"]
-
-term.log(number.replace_all(text, "N"))
-# "There are N apples and N oranges"
-```
+Interned patterns can't be closed; calling `close()` on one throws a `RuntimeError`.
 
 ## Next
 
-- [`json`](../json/README.md)
 - [`network`](../network/README.md)
